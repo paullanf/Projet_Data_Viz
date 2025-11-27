@@ -3,11 +3,11 @@
 ## 👥 Membres du groupe
 
 * **Jeromsan JUDES RAMESH**
-* **Omar Abdelrahman**
+* **Omar ABDELRAHMAN**
 * **Paul LANFRANCHI**
-* **Ines Yaici**
-* **Eglantine Dillies**
-* **Anne Laure Mugisha Gakwandi**
+* **Ines YAICI**
+* **Eglantine DILLIES**
+* **Anne Laure MUGISHA GAKWANDI**
   
 – Cohortes, RFM & CLV (Online Retail II)
 
