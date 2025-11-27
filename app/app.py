@@ -54,6 +54,14 @@ with st.sidebar.expander("Options avancées"):
         min_value=0.0, value=0.0, step=10.0
     )
 
+# Badge état des retours
+if returns_mode == "Exclure":
+    st.sidebar.markdown("🔵 **Retours exclus**")
+elif returns_mode == "Neutraliser":
+    st.sidebar.markdown("🟠 **Retours neutralisés**")
+else:
+    st.sidebar.markdown("🟢 Retours inclus")
+
 # Application des filtres
 df = utils.apply_filters(df_raw, country_filter, date_range, returns_mode, order_threshold, customer_type)
 
@@ -71,13 +79,7 @@ page = st.sidebar.radio(
     ["KPIs", "Cohortes", "RFM", "CLV", "Scénarios", "Export"]
 )
 
-filters_text = (
-    f"Pays={country_filter} | "
-    f"Période={date_range[0]}→{date_range[1]} | "
-    f"Retours={returns_mode} | "
-    f"Type Client={customer_type} | "
-    f"Seuil={order_threshold}£"
-)
+filters_text = ( f"Pays={country_filter} | " f"Période={date_range[0]} à {date_range[1]} | " f"Retours={returns_mode} | " f"Type Client={customer_type} | " f"Seuil={order_threshold}£" )
 
 # ---------------------------------------------------------
 # Pages
@@ -90,21 +92,41 @@ if page == "KPIs":
     # Calcul des KPIs via utils
     ca_total, n_clients, avg_order, north_star, avg_clv_emp = utils.compute_kpis(df)
 
+    # CLV baseline théorique (avec hypothèses standard)
+    baseline_margin = 0.30   # 30%
+    baseline_r = 0.60        # 60%
+    baseline_d = 0.10        # 10%
+    # m = marge * panier moyen
+    baseline_m = avg_order * baseline_margin
+    clv_baseline = utils.clv_formula(baseline_m, baseline_r, baseline_d)
+
     # Affichage en colonnes
-    col1, col2, col3, col4, col5 = st.columns(5)
-    col1.metric("CA total", f"{ca_total:,.0f} £")
-    col2.metric("Clients actifs", n_clients)
-    col3.metric("Panier moyen", f"{avg_order:,.2f} £")
-    col4.metric("North Star (Repeat %)", f"{north_star:.1f} %", help="% clients > 1 achat")
-    col5.metric("CLV Moyenne", f"{avg_clv_emp:,.0f} £")
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
+    col1.metric("CA total",f"{ca_total:,.0f} £",help="Ex : si 2 000 transactions totalisent 120 000 £, alors CA total = 120 000 £.")
+    col2.metric("Clients actifs",f"{n_clients} clients",help="Ex : si 1 200 clients différents ont passé ≥1 commande, alors Clients actifs = 1 200.")
+    col3.metric("Panier moyen",f"{avg_order:,.2f} £",help="Ex : si le CA total est 10 000 £ pour 400 commandes, alors Panier moyen = 25 £.")
+    col4.metric("North Star (Repeat %)",f"{north_star:.1f} % (n={n_clients})",help="Ex : si 300 clients ont acheté ≥2 fois sur 1 000 clients actifs, alors Repeat % = 30%.")
+    col5.metric("CLV Moyenne",f"{avg_clv_emp:,.0f} £ (n={n_clients})",help="Ex : si 100 clients génèrent 12 000 £, alors CLV moyenne = 120 £.")
+    col6.metric("CLV Baseline",f"{clv_baseline:,.0f} £",help="CLV théorique basée sur m=30% du panier, r=60%, d=10%. Formule : m·r / (1+d−r).")
 
     with st.expander("ℹ️ Aide – KPIs"):
         st.markdown("""
-        - **CA total** : somme du montant `Amount` sur la période.
-        - **Clients actifs** : nombre de clients ayant acheté au moins une fois.
-        - **Panier moyen** : CA / nombre de commandes.
-        - **Repeat % (North Star)** : % de clients avec ≥2 achats.
-        - **CLV empirique** : CA moyen généré par client.
+        ### Définitions & Exemples numériques
+        **CA total**  
+        Somme du chiffre d'affaires sur la période.  
+        *Ex.* : si 2 000 ventes génèrent 120 000 £ → **CA total = 120 000 £**.
+        **Clients actifs**  
+        Nombre de clients ayant passé ≥ 1 commande.  
+        *Ex.* : 1 200 clients différents → **Clients actifs = 1 200**.
+        **Panier moyen**  
+        CA total divisé par le nombre total de commandes.  
+        *Ex.* : 10 000 £ pour 400 commandes → **Panier moyen = 25 £**.
+        **Repeat % (North Star Metric)**  
+        Pourcentage de clients ayant effectué ≥ 2 achats.  
+        *Ex.* : 300 repeat buyers sur 1 000 clients → **Repeat % = 30%**.
+        **CLV empirique**  
+        CA moyen généré par client.  
+        *Ex.* : 12 000 £ générés par 100 clients → **CLV = 120 £**.
         """)
 
     # [NOUVEAU] Graphique de tendance temporelle avec granularité variable
@@ -121,23 +143,11 @@ if page == "KPIs":
     # Resample pour grouper par Mois/Trimestre
     df_trend = df.set_index("InvoiceDate").resample(granularity)["Amount"].sum().reset_index()
     fig_trend = px.line(df_trend, x="InvoiceDate", y="Amount", title="Évolution du CA")
-    fig_trend.add_annotation(
-        text=filters_text,
-        xref="paper", yref="paper",
-        x=0, y=1.12,
-        showarrow=False,
-        align="left",
-        font=dict(size=10, color="gray")
-    )
+    fig_trend.add_annotation( text=filters_text, xref="paper", yref="paper", x=0, y=1.12, showarrow=False, align="left", font=dict(size=10, color="gray") )
     st.plotly_chart(fig_trend, use_container_width=True)
     st.session_state["fig_trend"] = fig_trend #Sauvegarde pour le téléchargement
     png_trend = utils.export_plot_png(fig_trend, filters_text)
-    st.download_button(
-        "📥 Télécharger tendance des ventes",
-        data=png_trend,
-        file_name="tendance_vente.png",
-        mime="image/png"
-    )
+    st.download_button( "📥 Télécharger tendance des ventes", data=png_trend, file_name="tendance_vente.png", mime="image/png" )
 
 
 # ---------------- Cohortes ----------------
@@ -177,25 +187,25 @@ elif page == "Cohortes":
             fig_ret = px.imshow(
                 (retention * 100).round(1),
                 labels=dict(x="Mois après acquisition", y="Cohorte", color="Rétention (%)"),
-                aspect="auto", text_auto=True, color_continuous_scale="Blues"
+                aspect="auto", text_auto=".1f", color_continuous_scale="Blues"
             )
             st.session_state["fig_retention"] = fig_ret
-            fig_ret.add_annotation(
-                text=filters_text,
-                xref="paper", yref="paper",
-                x=0, y=1.12,
-                showarrow=False,
-                align="left",
-                font=dict(size=10, color="gray")
-            )
+            fig_ret.add_annotation( text=filters_text, xref="paper", yref="paper", x=0, y=1.12, showarrow=False, align="left", font=dict(size=10, color="gray") )
             st.plotly_chart(fig_ret, use_container_width=True)
+
+            # Ajouter taille de cohorte (n) utilisée
+            cohort_sizes = retention.iloc[:, 0]
+            # Nettoyage : format YYYY-MM, valeur entière
+            cohort_sizes_clean = {
+                idx.strftime("%Y-%m"): int(val)
+                for idx, val in cohort_sizes.items()
+            }
+            # Conversion en texte lisible
+            sizes_str = " | ".join([f"{k}: n={v}" for k, v in cohort_sizes_clean.items()])
+            st.caption(f"**Taille des cohortes :** {sizes_str}")
+
             png_ret = utils.export_plot_png(fig_ret, filters_text)
-            st.download_button(
-                "📥 Télécharger heatmap cohortes",
-                data=png_ret,
-                file_name="cohortes_heatmap.png",
-                mime="image/png"
-            )
+            st.download_button( "📥 Télécharger heatmap cohortes", data=png_ret, file_name="cohortes_heatmap.png", mime="image/png" )
 
     with tab2:
         st.markdown("### Dynamique de dépense par ancienneté")
@@ -225,22 +235,10 @@ elif page == "Cohortes":
             # On limite l’axe Y pour lisibilité (évite que les baleines écrasent tout)
             fig_dens.update_yaxes(range=[0, df_density["Amount"].quantile(0.95) * 1.5]) 
             st.session_state["fig_density"] = fig_dens
-            fig_dens.add_annotation(
-                text=filters_text,
-                xref="paper", yref="paper",
-                x=0, y=1.12,
-                showarrow=False,
-                align="left",
-                font=dict(size=10, color="gray")
-            )
+            fig_dens.add_annotation( text=filters_text, xref="paper", yref="paper", x=0, y=1.12, showarrow=False, align="left", font=dict(size=10, color="gray") )
             st.plotly_chart(fig_dens, use_container_width=True)
             png_dens = utils.export_plot_png(fig_dens, filters_text)
-            st.download_button(
-                "📥 Télécharger densité cohortes",
-                data=png_dens,
-                file_name="cohortes_densite.png",
-                mime="image/png"
-            )
+            st.download_button( "📥 Télécharger densité cohortes", data=png_dens, file_name="cohortes_densite.png", mime="image/png" )
             
         else:
             # [NOUVEAU] Vue Focus Cohorte
@@ -258,27 +256,11 @@ elif page == "Cohortes":
                 avg_trend = df_focus.groupby("CohortIndex")["Amount"].mean().reset_index()
                 fig_line = px.line(avg_trend, x="CohortIndex", y="Amount", markers=True, 
                                    labels={"CohortIndex": "Mois", "Amount": "Panier Moyen (£)"})
-                fig_line.update_xaxes(
-                    type="category",
-                    categoryorder="array",
-                    categoryarray=[str(i) for i in range(13)]
-                )
-                fig_line.add_annotation(
-                    text=filters_text,
-                    xref="paper", yref="paper",
-                    x=0, y=1.12,
-                    showarrow=False,
-                    align="left",
-                    font=dict(size=10, color="gray")
-                )
+                fig_line.update_xaxes( type="category", categoryorder="array", categoryarray=[str(i) for i in range(13)] )
+                fig_line.add_annotation( text=filters_text, xref="paper", yref="paper", x=0, y=1.12, showarrow=False, align="left", font=dict(size=10, color="gray") )
                 st.plotly_chart(fig_line, use_container_width=True)
                 png_line = utils.export_plot_png(fig_line, filters_text)
-                st.download_button(
-                    "📥 Télécharger tendance cohorte",
-                    data=png_line,
-                    file_name="cohorte_tendance.png",
-                    mime="image/png"
-                )
+                st.download_button( "📥 Télécharger tendance cohorte", data=png_line, file_name="cohorte_tendance.png", mime="image/png" )
                 
             with col_b:
                 st.markdown("**Dispersion (Densité)**")
@@ -286,27 +268,11 @@ elif page == "Cohortes":
                 fig_box = px.box(df_focus, x="CohortIndex", y="Amount", 
                                  labels={"CohortIndex": "Mois", "Amount": "Dépenses (£)"})
                 fig_box.update_yaxes(range=[0, df_focus["Amount"].quantile(0.98) * 1.2])
-                fig_box.update_xaxes(
-                    type="category",
-                    categoryorder="array",
-                    categoryarray=[str(i) for i in range(13)]
-                )
-                fig_box.add_annotation(
-                    text=filters_text,
-                    xref="paper", yref="paper",
-                    x=0, y=1.12,
-                    showarrow=False,
-                    align="left",
-                    font=dict(size=10, color="gray")
-                )
+                fig_box.update_xaxes( type="category", categoryorder="array", categoryarray=[str(i) for i in range(13)] )
+                fig_box.add_annotation( text=filters_text, xref="paper", yref="paper", x=0, y=1.12, showarrow=False, align="left", font=dict(size=10, color="gray") )
                 st.plotly_chart(fig_box, use_container_width=True)
                 png_box = utils.export_plot_png(fig_box, filters_text)
-                st.download_button(
-                    "📥 Télécharger dispersion cohorte",
-                    data=png_box,
-                    file_name="cohorte_dispersion.png",
-                    mime="image/png"
-                )
+                st.download_button( "📥 Télécharger dispersion cohorte", data=png_box, file_name="cohorte_dispersion.png", mime="image/png" )
 
 # ---------------- RFM ----------------
 elif page == "RFM":
@@ -321,7 +287,7 @@ elif page == "RFM":
         - **Panier moyen** : M / F.
         """)
 
-    # [NOUVEAU] Slider pour estimer la Marge dans le tableau
+    # Slider pour estimer la Marge dans le tableau
     margin_pct = st.slider("Marge estimée (%) pour calcul rentabilité", 0, 100, 30) / 100
 
     # Table agrégée par segment
@@ -330,7 +296,7 @@ elif page == "RFM":
         seg_agg = rfm_scored.groupby("Segment").agg(
             n_clients=("CustomerID", "count"),
             CA_total=("Monetary", "sum"),
-            Panier_moyen=("AvgBasket", "mean"), # [NOUVEAU] Utilisé depuis utils
+            Panier_moyen=("AvgBasket", "mean"),
             Action_recommandee=("Action", "first")
         ).reset_index()
         
@@ -344,47 +310,24 @@ elif page == "RFM":
             "Marge_estimee": "{:,.0f} £", 
             "Panier_moyen": "{:.2f} £"
         }))
+        st.caption(f"Effectif total RFM (n = {rfm_scored['CustomerID'].nunique()})")
 
         # Graphique Répartition
         col_g1, col_g2 = st.columns(2)
         with col_g1:
             fig_seg = px.bar(seg_agg, x="Segment", y="CA_total", text="n_clients", title="CA Total par Segment")
             st.session_state["fig_rfm_bar"] = fig_seg
-            fig_seg.add_annotation(
-                text=filters_text,
-                xref="paper", yref="paper",
-                x=0, y=1.12,
-                showarrow=False,
-                align="left",
-                font=dict(size=10, color="gray")
-            )
+            fig_seg.add_annotation( text=filters_text, xref="paper", yref="paper", x=0, y=1.12, showarrow=False, align="left", font=dict(size=10, color="gray") )
             st.plotly_chart(fig_seg, use_container_width=True)
             png_rfm_bar = utils.export_plot_png(fig_seg, filters_text)
-            st.download_button(
-                "📥 Télécharger RFM – CA par segment",
-                data=png_rfm_bar,
-                file_name="rfm_ca_segment.png",
-                mime="image/png"
-            )
+            st.download_button("📥 Télécharger RFM – CA par segment", data=png_rfm_bar, file_name="rfm_ca_segment.png", mime="image/png" )
         with col_g2:
             fig_pie = px.pie(seg_agg, values="n_clients", names="Segment", title="Répartition des Clients")
             st.session_state["fig_rfm_pie"] = fig_pie
-            fig_pie.add_annotation(
-                text=filters_text,
-                xref="paper", yref="paper",
-                x=0, y=1.12,
-                showarrow=False,
-                align="left",
-                font=dict(size=10, color="gray")
-            )
+            fig_pie.add_annotation( text=filters_text, xref="paper", yref="paper", x=0, y=1.12, showarrow=False, align="left", font=dict(size=10, color="gray") )
             st.plotly_chart(fig_pie, use_container_width=True)
             png_rfm_pie = utils.export_plot_png(fig_pie, filters_text)
-            st.download_button(
-                "📥 Télécharger RFM – Répartition clients",
-                data=png_rfm_pie,
-                file_name="rfm_repartition.png",
-                mime="image/png"
-            )
+            st.download_button( "📥 Télécharger RFM – Répartition clients", data=png_rfm_pie, file_name="rfm_repartition.png", mime="image/png" )
             
     else:
         st.warning("Pas de données RFM.")
@@ -525,7 +468,7 @@ elif page == "Scénarios":
         
         col_res1, col_res2, col_res3 = st.columns(3)
         col_res1.metric("CLV Baseline", f"{clv_base:.2f} £")
-        col_res2.metric("CLV Scénario", f"{clv_scen:.2f} £", delta=f"{delta_clv:.2f} £")
+        col_res2.metric( "CLV Scénario", f"{clv_scen:.2f} £", delta=f"{delta_clv:.2f} £", help=f"Basé sur {n_target} clients" )
         col_res3.metric("Impact Total (Est.)", f"{impact_ca_total:,.0f} £", help="Delta CLV * Nombre clients cible")
 
         # Analyse graphique
@@ -533,31 +476,38 @@ elif page == "Scénarios":
         st.caption(f"Effet croisé : La remise baisse la marge de **{remise_pct}%**, mais la rétention augmente de **{impact_retention*100:.0f} points**.")
         
         # Graphique en cascade (Waterfall) simulé ou Bar chart
-        fig_comp = px.bar(
-            x=["Baseline", "Scénario"], 
-            y=[clv_base, clv_scen], 
-            color=["Baseline", "Scénario"],
-            title="Comparaison de la Valeur Vie Client (CLV)",
-            text_auto=".2f"
-        )
+        fig_comp = px.bar( x=["Baseline", "Scénario"], y=[clv_base, clv_scen], color=["Baseline", "Scénario"], title="Comparaison de la Valeur Vie Client (CLV)", text_auto=".2f" )
         st.session_state["fig_scenario"] = fig_comp
-        fig_comp.add_annotation(
-            text=filters_text,
-            xref="paper", yref="paper",
-            x=0, y=1.12,
-            showarrow=False,
-            align="left",
-            font=dict(size=10, color="gray")
-        )
+        fig_comp.add_annotation( text=filters_text, xref="paper", yref="paper", x=0, y=1.12, showarrow=False, align="left", font=dict(size=10, color="gray") )
         st.plotly_chart(fig_comp, use_container_width=True)
         png_scenario = utils.export_plot_png(fig_comp, filters_text)
-        st.download_button(
-            "📥 Télécharger comparaison CLV",
-            data=png_scenario,
-            file_name="scenario_clv.png",
-            mime="image/png"
+        st.download_button("📥 Télécharger comparaison CLV",data=png_scenario,file_name="scenario_clv.png",mime="image/png")
+
+        st.markdown("### Sensibilité : comment la CLV réagit si la rétention change ?")
+        # Simulation : variation de r from 0.1 → 0.99
+        r_values, clv_values = utils.simulate_sensitivity(
+            m_monetary_scen,   # marge après remise
+            scen_r,            # rétention scénario
+            base_d             # même discount
         )
-        
+
+        fig_sens = px.line(
+            x=r_values,
+            y=clv_values,
+            labels={"x": "Rétention r", "y": "CLV (en £)"},
+            title="Sensibilité de la CLV à la Rétention r"
+        )
+        # Ajouter une ligne verticale pour visualiser la baseline
+        fig_sens.add_vline( x=base_r, line_width=2, line_dash="dash", annotation_text=f"r actuel = {base_r:.2f}", annotation_position="top left" )
+        # Ajouter une ligne verticale pour la rétention scénarisée
+        fig_sens.add_vline( x=scen_r, line_width=2, line_dash="dot", line_color="green", annotation_text=f"r scénario = {scen_r:.2f}", annotation_position="top right" )
+        # Ajouter l’annotation des filtres
+        fig_sens.add_annotation( text=filters_text, xref="paper", yref="paper", x=0, y=1.12, showarrow=False, align="left", font=dict(size=10, color="gray") )
+        st.session_state["fig_sensitivity"] = fig_sens  # pour export PNG
+        st.plotly_chart(fig_sens, use_container_width=True)
+
+        png_sens = utils.export_plot_png(fig_sens, filters_text) # téléchargement
+        st.download_button("📥 Télécharger courbe de sensibilité CLV",data=png_sens,file_name="sensibilite_clv.png",mime="image/png") 
     else:
         st.warning("Aucun client dans la cible sélectionnée.")
 

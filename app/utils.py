@@ -122,7 +122,7 @@ def compute_kpis(df):
         
     ca_total = df["Amount"].sum()
     n_clients = df["CustomerID"].nunique()
-    panier_moyen = df["Amount"].mean() # Panier moyen (ligne)
+    panier_moyen = df.groupby("InvoiceNo")["Amount"].sum().mean() # Panier moyen (ligne)
     
     # North Star Metric : % de clients ayant fait > 1 commande sur la période
     freq = df.groupby("CustomerID")["InvoiceNo"].nunique()
