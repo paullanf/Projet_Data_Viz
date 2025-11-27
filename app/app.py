@@ -98,15 +98,14 @@ if page == "KPIs":
     col4.metric("North Star (Repeat %)", f"{north_star:.1f} %", help="% clients > 1 achat")
     col5.metric("CLV Moyenne", f"{avg_clv_emp:,.0f} £")
 
-    with st.expander("ℹ️ Aide – KPIs (définitions + exemples)"):
-        with st.expander("ℹ️ Aide – KPIs"):
-            st.markdown("""
-            - **CA total** : somme du montant `Amount` sur la période.
-            - **Clients actifs** : nombre de clients ayant acheté au moins une fois.
-            - **Panier moyen** : CA / nombre de commandes.
-            - **Repeat % (North Star)** : % de clients avec ≥2 achats.
-            - **CLV empirique** : CA moyen généré par client.
-            """)
+    with st.expander("ℹ️ Aide – KPIs"):
+        st.markdown("""
+        - **CA total** : somme du montant `Amount` sur la période.
+        - **Clients actifs** : nombre de clients ayant acheté au moins une fois.
+        - **Panier moyen** : CA / nombre de commandes.
+        - **Repeat % (North Star)** : % de clients avec ≥2 achats.
+        - **CLV empirique** : CA moyen généré par client.
+        """)
 
     # [NOUVEAU] Graphique de tendance temporelle avec granularité variable
     st.subheader("Tendance des ventes")
