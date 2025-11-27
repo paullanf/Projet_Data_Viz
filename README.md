@@ -1,96 +1,164 @@
-# Projet_Data_Viz
+# 📊 Projet_Data_Viz
 
-Présentation :
-Le projet vise à construire une application d’aide à la décision pour le marketing basée sur les cohortes d’acquisition, la segmentation RFM et la valeur vie client (CLV).
-Données: le jeu de données à utiliser est le Online Retail II (UCI) , il contient les transactions e‑commerce d’un détaillant UK entre 01/12/2009 et le  09/12/2011(~1,07M lignes). 
-Objectifs :
-Mesurer la rétention par cohortes (M+1, M+2, …) et la dynamique de revenu.
+## 👥 Membres du groupe
 
-Construire des segments RFM (Recency–Frequency–Monetary) pour prioriser les actions.
+* **Jeromsan JUDES RAMESH**
+* **Omar Abdelrahman**
+* **Paul LANFRANCHI**
+* **Ines Yaici**
+* **Eglantine Dillies**
+* **Anne Laure Mugisha Gakwandi**
+  
+– Cohortes, RFM & CLV (Online Retail II)
 
-Estimer la CLV via (1) une approche empirique basée sur les cohortes et (2) une formule avec paramètres (r) (rétention) et (d) (taux d’actualisation).
+Application d’aide à la décision marketing basée sur :
 
-Tester des scénarios (ex. +5% de rétention, −10% de marge) et évaluer l’impact business.
+* l’analyse de **cohortes d’acquisition**
+* la **segmentation RFM** (Recency–Frequency–Monetary)
+* l’estimation de la **Customer Lifetime Value (CLV)**
+* la **simulation de scénarios business** (rétention, remise, marge)
 
-Intérêts business :
-Pilotage budget d’acquisition par LTV et définition de CPA cibles.
+L’application est développée en **Streamlit** et s’appuie sur le dataset **Online Retail II** (UCI), contenant les transactions e-commerce d’un détaillant UK entre le 01/12/2009 et le 09/12/2011 (~1,07M lignes).
 
-Priorisation CRM : où investir (segments/cohortes qui répondent), où réduire les dépenses.
+---
 
-Politiques de remise/retours : quantifier effet sur marge et rétention.
+## 🧩 Objectifs business
 
-Prévision court terme : revenus par âge de cohorte, densité de valeur.
+* **Mesurer la rétention** par cohortes (M+1, M+2, …) et la dynamique de revenu.
+* **Construire des segments RFM** pour prioriser les actions marketing.
+* **Estimer la CLV** via :
 
-I. Partie 1 : Notebook d’exploration visuelle complète
-L'objectif de cette partie est d'utiliser les connaissances acquises sur l'exploration visuelle dans le cours et de l'appliquer afin d'acquérir une compréhension exhaustive du jeu de données, ce qui vous permettra également par la suite de cadrer la conception de l’application streamlit et orientera vos analyses, transformations et visualisations de l'app streamlit.
-Résultats attendus dans le notebook
-Fiche synthétique des données : source, période couverte, volume, colonnes importantes.
+  * une approche empirique (CA moyen par client),
+  * une formule fermée basée sur la marge (m), la rétention (r) et le taux d’actualisation (d).
+* **Tester des scénarios** (+5 % de rétention, −10 % de marge, remise…) et mesurer l’impact sur :
 
-Dictionnaire des variables : nom, type, sémantique, unités/valeurs.
+  * la CLV,
+  * le CA,
+  * la rétention.
 
-Qualité des données : valeurs manquantes, doublons, outliers, règles d’annulation (factures InvoiceNo commençant par "C"), granularité temporelle.
-Graphiques visuels (6-8 graphes) :distributions; saisonnalités/tendances des ventes; répartition pays; mix grossiste/détaillant; premier aperçu des cohortes; premier profil RFM
+---
 
-Questions d'analyses pour mieux pour cadrer l’appli : exemples. quelles cohortes décrochent ? quels segments RFM sont à forte valeur ? quel impact des retours ?
+## 📂 Jeu de données
 
-Contrainte forte sur le rendu : Définir clairement toutes les métriques et interpreter/expliquer les visuels affichées dans le notebook.
-II. Partie 2 : Application Streamlit
-L'objectif de cette partie est de créer une application streamlit qui va permettre à l’équipe marketing de diagnostiquer, prioriser et simuler en temps réel :
-rétention par cohorte d’acquisition
-CLV par segment et au global
-Segments RFM à activer
-Scénarios (remise, marge, +rétention) avec calcul immédiat de l’impact (CLV, CA et rétention)
-Périmètre fonctionnel
-Chaque élément ci‑dessous précise ce que l'application doit permettre de faire et pourquoi c’est utile pour l’utilisateur final de votre application.
-Filtres possibles :
-Sélecteurs période d’analyse (glissante), Unités de temps (mois/trimestre), pays, type client, seuil de commande, mode retours (inclure / exclure / neutraliser). Pourquoi : isoler un périmètre homogène, comparer des fenêtres temporelles et évaluer l’effet des retours sur les métriques.
+* **Source** : Online Retail II – UCI Machine Learning Repository
+* **Période couverte** : 01/12/2009 → 09/12/2011
+* **Volume** : ~1,07 million de lignes
+* **Colonnes clés** :
 
-Vues / Pages streamlit (structure conseillée)
-KPIs (Overview) — À livrer : cartes chiffres (clients actifs, CA/âge de cohorte, taille segments RFM, CLV baseline, North Star). Pourquoi : donner un état instantané partagé. Cohortes (Diagnostiquer) — À livrer : heatmap rétention par cohortes, courbes de densité de CA par âge, possibilité de focus sur une cohorte. Pourquoi : repérer les âges qui décrochent et estimer la valeur future. Segments (Prioriser) — À livrer : table RFM (codes, labels, volumes, CA, marge, panier moyen) + priorités d’activation (ex. Champions, À risque). Pourquoi : orienter les actions CRM. Scénarios (Simuler) — À livrer : comparaison baseline vs scénario (barres/deltas) + sensibilités (courbe). Pourquoi : chiffrer l’impact d’une remise, d’un gain de rétention ou d’une variation de marge. Plan d’action (Exporter) — À livrer : export CSV “liste activable” (CustomerID, segment RFM, métriques clés) et PNGs des vues. Pourquoi : passer du constat à l’exécution.
+  * `InvoiceNo`, `InvoiceDate`
+  * `CustomerID`, `Country`
+  * `Quantity`, `UnitPrice`
+  * `Amount` *(créée dans le code = Quantity × UnitPrice)*
 
-Scénarios (paramètres de simulation) À livrer : sliders marge %, rétention (r), taux d’actualisation (d), remise moyenne % (avec choix d’application globale ou par segment RFM), commutateur inclure retours, sélecteur cohorte cible (ou toutes). Pourquoi : quantifier Δ CLV / Δ CA / Δ rétention pour aider à décider.
+Les fichiers ne sont **pas versionnés** dans le repo : ils sont **chargés à la volée via l’interface Streamlit** (upload `.csv` ou `.xlsx`).
 
-Exports À livrer : CSV des données filtrées et des listes activables, PNG des graphiques (avec titre, date, filtres actifs). Pourquoi : traçabilité, partage, passage à l’action.
+---
 
-Important :
-La conception techniques et l'architecture du code sont des tâches qui doivent être effectués par vos soins afin d'atteindre les objectifs et le péromètre fonctionnel spécifiés. Comme chaque projet en entreprise, le descriptif présenté dans ce projet représent les besoin exprimés par votre client. C'est à vous de trouver le chemin technique pour construire l'application.
-KPIs (définitions à afficher dans l’app)
-Chaque KPI doit afficher une aide montrant sa définition et son unité (infobulle ou autre), l'ajout d'un exemple numérique illustratif dans l’aide est un plus
-Exemples de KPIs à définir, expliquer et illustrer : CLV moyenne (ou CA à 90 jours par nouveau client); Rétention à t; rétention M+3; RFM score; CLV (empirique); CLV (formule fermée);
-Cohérences visuelle et applicative conseillées 
-Toujours afficher les filtres actifs
+## 🚀 Installation
 
-Toujours donner les effectifs (n) à côté des pourcentages.
+### 🔧 1. Cloner le repository
 
-Quand un retour est exclu, afficher un badge « retours exclus ».
+```bash
+git clone https://github.com/paullanf/Projet_Data_Viz.git
+cd Projet_Data_Viz
+```
 
-Les comparaisons baseline vs scénario doivent toujours préciser la période et l’échantillon.
+### 📦 2. Créer et activer un environnement virtuel (recommandé)
 
-Une idée par graphique
+```bash
+python -m venv .venv
+source .venv/bin/activate   # macOS / Linux
+.venv\Scripts\activate      # Windows
+```
 
-Labels directs sur les lignes/barres
+### 🧩 3. Installer les dépendances
 
-Ordre de lecture dans l'app : KPIs → tendances → segments → scénarios → export.
+```bash
+pip install -r requirements.txt
+```
 
-Soigner l'accessibilité : tailles de police, unités, contrastes...
+---
 
-Gestion des valeurs manquantes/outliers explicitée
+## 🧪 Lancer le notebook d'exploration (avant l'app)
 
-Aide intégrée (icône ℹ️) : définitions + mini‑exemples numériques.
+Le dossier `notebooks/` contient un notebook d'analyse préliminaire permettant :
 
-Rendu du projet :
-Reproductibilité
-Fournir requirements.txt fonctionnel et readme complet
-Arborescence suggérée du projet
-notebooks/01_exploration.ipynb
-app/app.py
-app/utils.py (defs fonctions)
-data/raw
-data/processed
-README.md, DATA_DICTIONARY.md (optionnel), requirements.txt
-docs/prez
-Rendu
-A envoyer le jour de la soutenance
-A l'adresse mail : hatim@datascientist.fr​
-Objet : PROJET ECE DATAVIZ 2025 - <Classe> - Groupe du projet <Numéro>
-Contenu du mail : ZIP ou Lien Github + membres du groupe
+* d'explorer les données brutes,
+* de visualiser les distributions,
+* de vérifier la qualité des données,
+* d'obtenir un aperçu des cohortes, RFM et comportements clients.
+
+### ▶️ Exécuter le notebook
+
+Assurez-vous d'être dans l'environnement virtuel puis lancez :
+
+```bash
+jupyter notebook notebooks/01_exploration.ipynb
+```
+
+Ou démarrez simplement Jupyter puis ouvrez le fichier depuis l'interface.
+
+Ce notebook n'est **pas obligatoire** pour faire tourner l'application, mais il permet de comprendre et valider le pipeline analytique avant l'utilisation de Streamlit.
+
+---
+
+## ▶️ Utilisation de l’application
+
+### 1. Lancer l’application Streamlit
+
+```bash
+streamlit run app/app.py
+```
+
+### 2. Charger les données
+
+Dans l’interface Streamlit :
+
+1. Importer un fichier **Online Retail II** (`.csv` ou `.xlsx`).
+2. L’application détecte automatiquement les colonnes nécessaires.
+3. Les analyses deviennent disponibles : Cohortes, RFM, CLV, Simulations.
+
+### 3. Fonctionnalités accessibles dans le menu latéral
+
+* **📆 Cohortes d’acquisition**
+
+  * suivi M+1, M+2...
+  * taux de rétention et revenu par cohorte
+* **🧮 Segmentation RFM**
+
+  * scoring R-F-M
+  * heatmaps et clusterisation
+* **💰 Estimation CLV**
+
+  * méthodes empirique et analytique
+* **🧪 Simulation business**
+
+  * impact d’une variation de la rétention
+  * impact d’une remise ou baisse de marge
+  * projection CA / marge / CLV
+
+---
+
+## 🏗️ Architecture du projet
+
+```
+Projet_Data_Viz/
+├── app/
+│   ├── app.py               # Application principale Streamlit
+│   └── utils.py             # Fonctions métier & traitements
+├── notebooks/
+│   └── 01_exploration.ipynb # Notebook d’exploration visuelle
+├── data/
+│   ├── raw/                 # Fichiers bruts (Online Retail II)
+│   └── processed/           # Données transformées
+├── docs/
+│   └── prez/                # Slides de présentation
+├── requirements.txt
+└── README.md
+```
+
+---
+
+## 📎 Lien du repository
+
+GitHub : [https://github.com/paullanf/Projet_Data_Viz](https://github.com/paullanf/Projet_Data_Viz)
