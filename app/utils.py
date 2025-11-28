@@ -23,7 +23,6 @@ def load_data(uploaded_files):
     for file in uploaded_files:
         try:
             if file.name.endswith(".csv"):
-                # [NOTE] encoding='ISO-8859-1' est souvent requis pour ce dataset spécifique
                 df_temp = pd.read_csv(file, encoding='ISO-8859-1', low_memory=False)
             else:
                 df_temp = pd.read_excel(file)
@@ -34,7 +33,7 @@ def load_data(uploaded_files):
     if not all_dfs:
         return pd.DataFrame()
 
-    # Fusion des fichiers (Concaténation)
+    # Fusion des fichiers
     df = pd.concat(all_dfs, ignore_index=True)
 
     # Nettoyage noms de colonnes
@@ -50,13 +49,10 @@ def load_data(uploaded_files):
     }
     df = df.rename(columns=rename_map)
 
-    # Vérification colonnes requises (optionnel mais recommandé)
-    # required = ["InvoiceNo", "InvoiceDate", "Quantity", "UnitPrice", "CustomerID", "Country"]
-    # ... (code de vérification conservé implicitement si besoin)
 
     df = df.dropna(subset=["CustomerID"]).copy()
     
-    # [NOTE] Conversion en int puis str pour éviter le format "12345.0"
+    # Conversion en int puis str pour éviter le format "12345.0"
     df["CustomerID"] = df["CustomerID"].astype(int).astype(str)
     df["InvoiceDate"] = pd.to_datetime(df["InvoiceDate"])
     df["Amount"] = df["Quantity"] * df["UnitPrice"]
@@ -64,7 +60,7 @@ def load_data(uploaded_files):
     # Flags utiles
     df["InvoiceMonth"] = df["InvoiceDate"].dt.to_period("M").dt.to_timestamp()
     
-    # [NOTE] Ajout .upper() pour robustesse sur le 'C'
+    # Ajout .upper() pour robustesse sur le 'C'
     df["is_cancel"] = df["InvoiceNo"].astype(str).str.upper().str.startswith("C")
 
     return df
@@ -91,8 +87,9 @@ def apply_filters(df, country_filter, date_range, returns_mode, order_threshold,
         df_f = df_f[(df_f["InvoiceDate"] >= pd.Timestamp(start)) &
                     (df_f["InvoiceDate"] <= pd.Timestamp(end))]
     
-    # [NOUVEAU] Filtre Type Client (Simulation car pas de colonne 'Type' dans le CSV brut)
-    # B2B est simulé ici par les ID < 13000 (hypothèse courante sur ce dataset ou arbitraire)
+    # Filtre Type Client (Simulation car pas de colonne 'Type' dans le CSV brut)
+    # B2B est simulé ici par les ID < 13000 (hypothèse courante sur ce dataset ou arbitraire
+    
     if customer_type == "B2B (VIP)":
         df_f = df_f[df_f["CustomerID"].astype(int) < 13000]
     elif customer_type == "B2C (Standard)":
@@ -114,7 +111,7 @@ def apply_filters(df, country_filter, date_range, returns_mode, order_threshold,
 
 def compute_kpis(df):
     """
-    [NOUVEAU] Calcule les KPI globaux en une seule passe pour la page Overview.
+     Calcule les KPI globaux en une seule passe pour la page Overview.
     Intègre la logique 'North Star' demandée.
     """
     if df.empty:
@@ -137,7 +134,7 @@ def compute_kpis(df):
 def compute_rfm(df):
     """
     Calcule Recency, Frequency, Monetary par client.
-    [NOUVEAU] Calcule aussi 'AvgBasket' (Panier moyen par client) pour le tableau Segments.
+    Calcule aussi 'AvgBasket' (Panier moyen par client) pour le tableau Segments.
     """
     if df.empty:
         return pd.DataFrame()
@@ -147,7 +144,7 @@ def compute_rfm(df):
     rfm = df.groupby("CustomerID").agg({
         "InvoiceDate": lambda x: (NOW - x.max()).days,
         "InvoiceNo": "nunique",
-        "Amount": ["sum", "mean"] # [NOUVEAU] On récupère Somme ET Moyenne
+        "Amount": ["sum", "mean"] # On récupère Somme ET Moyenne
     })
     
     # Aplatir les colonnes MultiIndex
@@ -206,7 +203,7 @@ def score_rfm(rfm):
         rfm_scored["Action"] = "N/A"
         return rfm_scored
 
-    # Mapping de segments (Logique conservée)
+    # Mapping de segments
     def label_segment(row):
         r, f, m = int(row["R_score"]), int(row["F_score"]), int(row["M_score"])
         if r >= 4 and f >= 4 and m >= 4:
@@ -222,7 +219,7 @@ def score_rfm(rfm):
 
     rfm_scored["Segment"] = rfm_scored.apply(label_segment, axis=1)
     
-    # [NOUVEAU] Ajout d'une colonne 'Action' pour l'export "Liste Activable"
+    # Ajout d'une colonne 'Action' pour l'export "Liste Activable"
     action_map = {
         "Champions": "Choyer / Upsell VIP",
         "Fidèles": "Programme fidélité",
@@ -266,7 +263,7 @@ def compute_cohorts(df):
     retention = cohort_pivot.divide(cohort_sizes, axis=0)
 
     # CA par âge de cohorte (Pour les courbes)
-    # [NOTE] On prend la moyenne ici pour normaliser les courbes
+    # On prend la moyenne ici pour normaliser les courbes
     rev_data = df_cohort.groupby(["CohortMonth", "CohortIndex"])["Amount"].mean().reset_index()
     rev_pivot = rev_data.pivot_table(
         index="CohortMonth",
