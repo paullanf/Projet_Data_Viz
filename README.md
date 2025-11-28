@@ -114,7 +114,7 @@ streamlit run app/app.py
 
 Dans l’interface Streamlit :
 
-1. Importer un fichier **Online Retail II** (`.csv` ou `.xlsx`).
+1. Importer un fichier **Online Retail II** d'origine (`.xlsx`).
 2. L’application détecte automatiquement les colonnes nécessaires.
 3. Les analyses deviennent disponibles : Cohortes, RFM, CLV, Simulations.
 
