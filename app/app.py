@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import utils  # [NOTE] On importe le fichier utils.py qu'on vient de créer
+import utils  
 
 # ---------------------------------------------------------
 # Config générale
@@ -21,7 +21,7 @@ st.title("Application Marketing – Cohortes, RFM & CLV")
 st.sidebar.header("Filtres et navigation")
 
  
-# Upload des fichiers (acceptant plusieurs fichiers)
+# Upload des fichiers 
 uploaded_files = st.sidebar.file_uploader(
     "Importer le dataset Online Retail II", 
     type=["csv", "xlsx"],
@@ -46,7 +46,7 @@ date_range = st.sidebar.date_input("Période d'analyse", [min_date, max_date])
 with st.sidebar.expander("Options avancées"):
     returns_mode = st.radio("Retours", ["Inclure", "Exclure", "Neutraliser"], index=1)
     
-    # [NOUVEAU] Filtre Type Client
+    #  Filtre Type Client
     customer_type = st.selectbox("Type de Client", ["Tous", "B2B (VIP)", "B2C (Standard)"])
     
     order_threshold = st.number_input(
@@ -129,7 +129,7 @@ if page == "KPIs":
         *Ex.* : 12 000 £ générés par 100 clients → **CLV = 120 £**.
         """)
 
-    # [NOUVEAU] Graphique de tendance temporelle avec granularité variable
+    # Graphique de tendance temporelle avec granularité variable
     st.subheader("Tendance des ventes")
 
     # Dictionnaire pour mapper le code (M) vers le nom affiché (Mois)
@@ -166,7 +166,7 @@ elif page == "Cohortes":
     # 1. On récupère les données
     retention, rev_pivot = utils.compute_cohorts(df)
     
-    # [NOUVEAU] On appelle ta nouvelle fonction pour avoir les détails (densité)
+    # On appelle ta nouvelle fonction pour avoir les détails (densité)
     df_density = utils.get_cohort_data_for_density(df)
 
     # 2. Sélecteur de Focus (Exigence : "possibilité de focus sur une cohorte")
@@ -218,7 +218,7 @@ elif page == "Cohortes":
             st.markdown("**Distribution des dépenses par âge (Vue Globale)**")
             st.info("💡 Ce graphique (Box Plot) montre la 'densité' : comment les dépenses sont réparties. La boîte contient 50% des clients.")
             
-            # [NOUVEAU] Graphique de densité globale (Exigence : "courbes de densité")
+            # Graphique de densité globale (Exigence : "courbes de densité")
             fig_dens = px.box(
                 df_density, 
                 x="CohortIndex", 
@@ -241,7 +241,7 @@ elif page == "Cohortes":
             st.download_button( "📥 Télécharger densité cohortes", data=png_dens, file_name="cohortes_densite.png", mime="image/png" )
             
         else:
-            # [NOUVEAU] Vue Focus Cohorte
+            # Vue Focus Cohorte
             st.markdown(f"**Analyse détaillée de la cohorte : {focus_cohort}**")
             
             # Filtrage sur la cohorte choisie
@@ -345,8 +345,7 @@ elif page == "CLV":
         - Plus r ↑ → CLV ↑ ; plus d ↑ → CLV ↓.
         """)
 
-    # ... (Le code CLV de base reste très similaire, juste appelé depuis utils si besoin)
-    # Ici je garde ton code interface car il était spécifique
+
     clv_emp = utils.compute_kpis(df)[4] # On récupère juste la CLV emp
     st.metric("CLV moyenne empirique", f"{clv_emp:,.2f} £")
 
@@ -377,14 +376,14 @@ elif page == "Scénarios":
         """)
     st.markdown("---")
 
-    # 1. CIBLAGE (Le fameux "Sélecteur cohorte cible ou segment")
+    # 1. CIBLAGE ( "Sélecteur cohorte cible ou segment")
     col_cible, col_params = st.columns([1, 2])
     
     with col_cible:
         st.header("1. Cible")
         target_mode = st.radio("Appliquer le scénario à :", ["Global (Tous)", "Par Segment RFM", "Par Cohorte"])
         
-        df_target = df.copy() # Par défaut
+        df_target = df.copy() 
         target_name = "Global"
 
         if target_mode == "Par Segment RFM":
@@ -406,7 +405,6 @@ elif page == "Scénarios":
             selected_cohort = st.selectbox("Choisir la cohorte :", cohorts_list)
             
             # Recalcul rapide pour trouver les ID de cette cohorte
-            # Note : Idéalement on aurait une fonction optimisée dans utils, mais on filtre ici
             first_purch = df.groupby("CustomerID")["InvoiceDate"].min().dt.to_period("M").dt.to_timestamp()
             ids_cohort = first_purch[first_purch == pd.to_datetime(selected_cohort)].index
             df_target = df[df["CustomerID"].isin(ids_cohort)]
@@ -427,7 +425,7 @@ elif page == "Scénarios":
         
         with c2:
             st.markdown("**Scénario (Action)**")
-            # [NOUVEAU] Slider Remise distinct
+            # Slider Remise distinct
             remise_pct = st.slider("Remise accordée (%)", 0.0, 50.0, 0.0, help="Diminue la marge directe")
             impact_retention = st.slider("Gain espéré de rétention (+pts)", 0.0, 20.0, 5.0) / 100
             
@@ -435,19 +433,11 @@ elif page == "Scénarios":
 
     # 3. CALCULS ET RÉSULTATS
     if n_target > 0:
-        # Calcul de la marge mensuelle moyenne (m) pour CETTE cible
+        # Calcul de la marge mensuelle moyenne (m) pour cette cible
         m_base_val = (df_target["Amount"].sum() / n_target) * base_margin_pct # Simplification CLV empirique * marge
-        # Note : Pour être très précis, m devrait être mensuel. 
-        # Ici on prend une approx basée sur le panier moyen total / durée vie, ajustons :
-        # On va utiliser le panier moyen * fréquence mensuelle approx
-        
-        # Méthode robuste via utils
-        # On recalcule les KPI basiques pour la cible
+
         _, _, panier_target, _, _ = utils.compute_kpis(df_target)
-        # Frequence d'achat mensuelle moyenne (approx) : 
-        # Disons qu'un client achète F fois sur T mois. F/T.
-        # Pour simplifier l'exercice académique, on fixe m = Panier Moyen * Marge * Freq (arbitraire 1 achat/mois pour l'exemple ou calculé)
-        # On va utiliser le panier moyen comme base de 'm' par transaction
+
         
         m_monetary_base = panier_target * base_margin_pct
         
@@ -475,7 +465,7 @@ elif page == "Scénarios":
         st.markdown("#### Pourquoi ça varie ?")
         st.caption(f"Effet croisé : La remise baisse la marge de **{remise_pct}%**, mais la rétention augmente de **{impact_retention*100:.0f} points**.")
         
-        # Graphique en cascade (Waterfall) simulé ou Bar chart
+        # Graphique en cascade simulé ou Bar chart
         fig_comp = px.bar( x=["Baseline", "Scénario"], y=[clv_base, clv_scen], color=["Baseline", "Scénario"], title="Comparaison de la Valeur Vie Client (CLV)", text_auto=".2f" )
         st.session_state["fig_scenario"] = fig_comp
         fig_comp.add_annotation( text=filters_text, xref="paper", yref="paper", x=0, y=1.12, showarrow=False, align="left", font=dict(size=10, color="gray") )
@@ -484,7 +474,7 @@ elif page == "Scénarios":
         st.download_button("📥 Télécharger comparaison CLV",data=png_scenario,file_name="scenario_clv.png",mime="image/png")
 
         st.markdown("### Sensibilité : comment la CLV réagit si la rétention change ?")
-        # Simulation : variation de r from 0.1 → 0.99
+        # Simulation : variation de r de 0.1 → 0.99
         r_values, clv_values = utils.simulate_sensitivity(
             m_monetary_scen,   # marge après remise
             scen_r,            # rétention scénario
